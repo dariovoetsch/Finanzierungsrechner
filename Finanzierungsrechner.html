@@ -403,6 +403,32 @@
   .summary-strip .item .label{font-size:0.72rem; color:var(--muted); margin-bottom:2px;}
   .summary-strip .item .value{font-size:1.05rem; font-weight:700; font-variant-numeric:tabular-nums;}
 
+  .miet-result{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:22px;
+    padding:14px 16px;
+    background:var(--bg-soft);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    font-size:0.9rem;
+  }
+  .miet-result strong{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:1.1rem;
+    font-variant-numeric:tabular-nums;
+  }
+  .miet-result select{
+    font-family:inherit;
+    font-size:0.86rem;
+    padding:6px 8px;
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    background:#fff;
+  }
+
   .empty-state{
     padding:22px;
     text-align:center;
@@ -529,10 +555,29 @@
     <p class="note">Berechnungsgrundlage: mind. 20 % Eigenkapital, davon mind. 10 % nicht aus der 2. Säule; kalkulatorischer Zins und Nebenkosten wie oben gewählt; Tragbarkeitsgrenze 33 % des Bruttoeinkommens; 2. Hypothek amortisiert über die gewählte Dauer. Effektive Kriterien können von Bank zu Bank abweichen.</p>
   </section>
 
-  <!-- SECTION 2 -->
+  <!-- SECTION 2: MIETE VOR KAUF -->
   <section class="block">
-    <h2>2&ensp;Eigenkapitalgeber</h2>
-    <p class="lead">Wer steuert wie viel Eigenkapital bei – und zu welchen Bedingungen? Jeder Betrag wird eindeutig <span id="txt-personA-1">Ich</span> oder <span id="txt-personB-1">Partnerin</span> zugeordnet.</p>
+    <h2>2&ensp;Miete vor dem Kauf</h2>
+    <p class="lead">Falls Sie zuerst zur Miete wohnen und der Vermieter den Mietzins bis zum Kauf für Sie zurücklegt, fliesst der angesparte Betrag automatisch als Eigenkapital in die Rechnung ein.</p>
+
+    <div class="slider-grid" id="sliders-miete"></div>
+
+    <div class="miet-result">
+      <span>Ergibt angespartes Eigenkapital von</span>
+      <strong id="miet-betrag">CHF 0</strong>
+      <span>zugeordnet an</span>
+      <select id="miet-person">
+        <option value="a">Ich</option>
+        <option value="b">Partnerin</option>
+        <option value="beide">hälftig beide</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- SECTION 3 -->
+  <section class="block">
+    <h2>3&ensp;Eigenkapitalgeber</h2>
+    <p class="lead">Wer steuert wie viel Eigenkapital bei – und zu welchen Bedingungen? Jeder Betrag wird eindeutig <span id="txt-personA-1">Ich</span> oder <span id="txt-personB-1">Partnerin</span> zugeordnet. Das angesparte Mietkapital aus Schritt 2 ist hier bereits mitgerechnet.</p>
 
     <div class="table-scroll">
       <table class="data" id="table-ek">
@@ -559,14 +604,15 @@
     <div class="summary-strip">
       <div class="item"><div class="label" id="sum-a-label">Ich</div><div class="value" id="sum-a-value">–</div></div>
       <div class="item"><div class="label" id="sum-b-label">Partnerin</div><div class="value" id="sum-b-value">–</div></div>
+      <div class="item"><div class="label">davon Mietkapital (Vormiete)</div><div class="value" id="sum-miet-value">–</div></div>
       <div class="item"><div class="label">Eigenkapital total</div><div class="value" id="sum-total-value">–</div></div>
       <div class="item"><div class="label">davon aus Vorsorge (weich)</div><div class="value" id="sum-weich-value">–</div></div>
     </div>
   </section>
 
-  <!-- SECTION 3 -->
+  <!-- SECTION 4 -->
   <section class="block">
-    <h2>3&ensp;Sanierungsprojekte</h2>
+    <h2>4&ensp;Sanierungsprojekte</h2>
     <p class="lead">Massnahmen an der Liegenschaft, nach Priorität sortiert. Legen Sie fest, ob die Kosten in die Hauptfinanzierung einfliessen oder erst später realisiert werden.</p>
 
     <div class="table-scroll">
@@ -615,6 +661,9 @@
     amortDauer: 15,
     hyp1Grenze: 65,
     maxBelehnung: 80,
+    mietDauerMonate: 0,
+    mietzinsMonat: 0,
+    mietPerson: "b",
     personA: "Ich",
     personB: "Partnerin",
     ekGeber: [],
@@ -647,6 +696,10 @@
   const advSliders = [
     {key:"hyp1Grenze", label:"Grenze 1. Hypothek", min:50, max:80, step:1, unit:"%", dec:0},
     {key:"maxBelehnung", label:"Maximale Belehnung total", min:70, max:90, step:1, unit:"%", dec:0}
+  ];
+  const mietSliders = [
+    {key:"mietDauerMonate", label:"Mietdauer", min:0, max:60, step:1, unit:"Monate", dec:0},
+    {key:"mietzinsMonat", label:"Monatlicher Mietzins", min:0, max:4000, step:50, unit:"CHF", dec:0}
   ];
 
   function buildSlider(cfg){
@@ -684,7 +737,14 @@
     mainSliders.forEach(cfg => mainWrap.appendChild(buildSlider(cfg)));
     const advWrap = document.getElementById("sliders-advanced");
     advSliders.forEach(cfg => advWrap.appendChild(buildSlider(cfg)));
+    const mietWrap = document.getElementById("sliders-miete");
+    mietSliders.forEach(cfg => mietWrap.appendChild(buildSlider(cfg)));
   }
+
+  document.getElementById("miet-person").addEventListener("change", function(e){
+    state.mietPerson = e.target.value;
+    renderAll();
+  });
 
   // ---------- person labels ----------
   const nameAInputs = () => document.querySelectorAll(".js-personA-label");
@@ -698,6 +758,9 @@
       sel.options[0].text = state.personA;
       sel.options[1].text = state.personB;
     });
+    const mietSel = document.getElementById("miet-person");
+    mietSel.options[0].text = state.personA;
+    mietSel.options[1].text = state.personB;
   }
 
   document.getElementById("personA-name").addEventListener("input", function(e){
@@ -898,11 +961,22 @@
     const summeNachKauf = s.projekte.filter(p => !p.hauptfinanzierung).reduce((a,p) => a + p.kosten, 0);
     const gesamtinvestition = s.kaufpreis + summeHaupt;
 
-    const ekTotal = s.ekGeber.reduce((a,g) => a + g.betrag, 0);
-    const ekA = s.ekGeber.filter(g => g.person === "a").reduce((a,g) => a + g.betrag, 0);
-    const ekB = s.ekGeber.filter(g => g.person === "b").reduce((a,g) => a + g.betrag, 0);
+    const ekGeberTotal = s.ekGeber.reduce((a,g) => a + g.betrag, 0);
+    const ekGeberA = s.ekGeber.filter(g => g.person === "a").reduce((a,g) => a + g.betrag, 0);
+    const ekGeberB = s.ekGeber.filter(g => g.person === "b").reduce((a,g) => a + g.betrag, 0);
     const ekWeich = s.ekGeber.filter(g => weichArts.indexOf(g.art) !== -1).reduce((a,g) => a + g.betrag, 0);
-    const ekHart = ekTotal - ekWeich;
+
+    // Mietkapital: während der Mietphase angesparter Betrag, zählt als hartes Eigenkapital
+    const mietkapital = Math.max(0, s.mietDauerMonate) * Math.max(0, s.mietzinsMonat);
+    let mietA = 0, mietB = 0;
+    if(s.mietPerson === "a") mietA = mietkapital;
+    else if(s.mietPerson === "b") mietB = mietkapital;
+    else { mietA = mietkapital / 2; mietB = mietkapital / 2; }
+
+    const ekTotal = ekGeberTotal + mietkapital;
+    const ekA = ekGeberA + mietA;
+    const ekB = ekGeberB + mietB;
+    const ekHart = (ekGeberTotal - ekWeich) + mietkapital;
 
     const belehnung = Math.max(0, gesamtinvestition - ekTotal);
     const grenzeHyp1 = gesamtinvestition * s.hyp1Grenze / 100;
@@ -928,7 +1002,7 @@
 
     return {
       summeHaupt, summeNachKauf, gesamtinvestition,
-      ekTotal, ekA, ekB, ekWeich, ekHart,
+      ekTotal, ekA, ekB, ekWeich, ekHart, mietkapital,
       belehnung, hyp1, hyp2, ueberschuss, amortJahr, zinsKosten, nebenkosten,
       jaehrlicheKosten, tragbarkeit, ekQuote, hartQuote, belQuote,
       ekOk, hartOk, tragOk, finanzierbar
@@ -946,23 +1020,21 @@
     marker.style.left = markerPct + "%";
   }
 
-  const iconCheck = '<circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.22)"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
-  const iconCross = '<circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.22)"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>';
-
   function renderAll(){
     const c = recalc();
     document.getElementById("cap-bel-label").textContent = state.maxBelehnung;
 
-    // status banner
-    const banner = document.getElementById("status-banner");
-    const icon = document.getElementById("status-icon");
+    // status banner / ampel
     const text = document.getElementById("status-text");
     const sub = document.getElementById("status-sub");
     const reasonsEl = document.getElementById("fail-reasons");
+    const lightRed = document.getElementById("light-red");
+    const lightGreen = document.getElementById("light-green");
 
-    banner.classList.toggle("pass", c.finanzierbar);
-    banner.classList.toggle("fail", !c.finanzierbar);
-    icon.innerHTML = c.finanzierbar ? iconCheck : iconCross;
+    lightRed.classList.toggle("active", !c.finanzierbar);
+    lightGreen.classList.toggle("active", c.finanzierbar);
+    text.classList.toggle("pass", c.finanzierbar);
+    text.classList.toggle("fail", !c.finanzierbar);
 
     if(c.finanzierbar){
       text.textContent = "Finanzierung möglich";
@@ -1007,9 +1079,13 @@
     document.getElementById("bd-nebenkosten").textContent = fmtCHF(c.nebenkosten) + " / Jahr";
     document.getElementById("bd-totalkosten").textContent = fmtCHF(c.jaehrlicheKosten) + " / Jahr";
 
+    // miete vor kauf
+    document.getElementById("miet-betrag").textContent = fmtCHF(c.mietkapital);
+
     // ek summary
     document.getElementById("sum-a-value").textContent = fmtCHF(c.ekA);
     document.getElementById("sum-b-value").textContent = fmtCHF(c.ekB);
+    document.getElementById("sum-miet-value").textContent = fmtCHF(c.mietkapital);
     document.getElementById("sum-total-value").textContent = fmtCHF(c.ekTotal);
     document.getElementById("sum-weich-value").textContent = fmtCHF(c.ekWeich);
 
@@ -1035,6 +1111,9 @@
     state.amortDauer = 15;
     state.hyp1Grenze = 65;
     state.maxBelehnung = 80;
+    state.mietDauerMonate = 24;
+    state.mietzinsMonat = 2200;
+    state.mietPerson = "b";
     state.ekGeber = [];
     state.projekte = [];
     nextEkId = 1; nextProjId = 1;
@@ -1057,6 +1136,9 @@
     state.amortDauer = 15;
     state.hyp1Grenze = 65;
     state.maxBelehnung = 80;
+    state.mietDauerMonate = 0;
+    state.mietzinsMonat = 0;
+    state.mietPerson = "b";
     state.ekGeber = [];
     state.projekte = [];
     nextEkId = 1; nextProjId = 1;
@@ -1067,12 +1149,13 @@
   }
 
   function syncSlidersFromState(){
-    mainSliders.concat(advSliders).forEach(cfg => {
+    mainSliders.concat(advSliders).concat(mietSliders).forEach(cfg => {
       const range = document.getElementById("range-"+cfg.key);
       const num = document.getElementById("num-"+cfg.key);
       if(range) range.value = state[cfg.key];
       if(num) num.value = state[cfg.key];
     });
+    document.getElementById("miet-person").value = state.mietPerson;
   }
 
   document.getElementById("btn-example").addEventListener("click", loadExample);
